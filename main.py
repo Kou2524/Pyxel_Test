@@ -11,6 +11,6 @@ class App:
 
     def draw(self):
         pyxel.cls(0)
-        pyxel.text(self.x, 60, "HELLO", 7)
+        pyxel.text(self.x, 60, "HELLO PYXEL", 7)
 
 App()
