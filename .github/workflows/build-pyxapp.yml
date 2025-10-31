@@ -19,7 +19,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      # 👇ここを追加（Pyxelが使うネイティブのやつをUbuntuに入れる）
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -29,7 +28,6 @@ jobs:
             libsdl2-mixer-dev \
             libsdl2-ttf-dev
 
-      # 👇これでPyxelを入れる（さっきより後）
       - name: Install pyxel
         run: |
           pip install --upgrade pip
@@ -37,11 +35,14 @@ jobs:
 
       - name: Package game
         run: |
-          # ここで move4.py を pyxapp にする。ファイル名に合わせて変えてね
           pyxel package . move4.py
 
+      # 👇ここを直す
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: pyxel-app
-          path: main.pyxapp
+          # Actionsの実行パスに合わせる
+          path: ${{ github.workspace }}/move4.pyxapp
+          # もしくは↓でもたぶんいける
+          # path: ./move4.pyxapp
