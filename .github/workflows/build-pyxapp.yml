@@ -33,12 +33,17 @@ jobs:
           pip install --upgrade pip
           pip install pyxel
 
+      # ここで一回上に出してから、リポジトリに戻す
       - name: Package game
         run: |
-          pyxel package . move4.py
+          cd ..
+          # ↑ 1階層上がる（ここが /home/runner/work/Pyxel_Test になる）
+          pyxel package Pyxel_Test move4.py
+          # できた move4.pyxapp をリポジトリの中に戻す
+          mv move4.pyxapp Pyxel_Test/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: pyxel-app
-          path: ${{ github.workspace }}/../move4.pyxapp
+          path: ${{ github.workspace }}/move4.pyxapp
