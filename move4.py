@@ -3,7 +3,7 @@ import pyxel
 
 class App:
     def __init__(self):
-        pyxel.init(160, 120, title="mouse pad", fps=60)
+        pyxel.init(160, 120, title="bare touch pad", fps=60)
 
         # プレイヤー
         self.x = 60
@@ -11,13 +11,13 @@ class App:
         self.vy = 0
         self.ground_y = 96
 
-        # 左の十字キーの位置（ちょっと上に）
+        # 左パッド
         self.dpad_x = 4
         self.dpad_y = 58
         self.dpad_w = 50
         self.dpad_h = 50
 
-        # 右のAボタン
+        # 右ボタン
         self.btn_x = 110
         self.btn_y = 58
         self.btn_w = 28
@@ -25,9 +25,13 @@ class App:
 
         pyxel.run(self.update, self.draw)
 
-    def _mouse_in(self, x, y, w, h):
-        """マウス/タッチがこの四角の中ならTrue"""
-        if not pyxel.btn(pyxel.MOUSE_LEFT_BUTTON):
+    def mouse_in_rect(self, x, y, w, h):
+        """
+        できるだけ原始的に判定する:
+        - ボタンは pyxel.btn(0) で見る
+        - 座標は pyxel.mouse_x / pyxel.mouse_y を使う
+        """
+        if not pyxel.btn(0):
             return False
         mx = pyxel.mouse_x
         my = pyxel.mouse_y
@@ -38,7 +42,7 @@ class App:
         move_right = False
         jump = False
 
-        # ① PCのキーボードでも動くように
+        # キーボード（PC用）は残しておく
         if pyxel.btn(pyxel.KEY_LEFT):
             move_left = True
         if pyxel.btn(pyxel.KEY_RIGHT):
@@ -46,21 +50,20 @@ class App:
         if pyxel.btnp(pyxel.KEY_SPACE):
             jump = True
 
-        # ② スマホ（＝マウス扱い）の入力
+        # スマホ/タップ：ボタン0で見る
         # 左パッド
-        if self._mouse_in(self.dpad_x, self.dpad_y, self.dpad_w, self.dpad_h):
-            # 左右を分ける
+        if self.mouse_in_rect(self.dpad_x, self.dpad_y, self.dpad_w, self.dpad_h):
             cx = self.dpad_x + self.dpad_w / 2
             if pyxel.mouse_x < cx:
                 move_left = True
             else:
                 move_right = True
 
-        # Aボタン
-        if self._mouse_in(self.btn_x, self.btn_y, self.btn_w, self.btn_h):
+        # 右ボタン
+        if self.mouse_in_rect(self.btn_x, self.btn_y, self.btn_w, self.btn_h):
             jump = True
 
-        # ③ 横移動
+        # 横移動
         speed = 1.5
         if move_left:
             self.x -= speed
@@ -73,7 +76,7 @@ class App:
         if self.x > pyxel.width - 8:
             self.x = pyxel.width - 8
 
-        # ④ 重力＋ジャンプ
+        # 重力＋ジャンプ
         self.vy += 0.3
         on_ground = self.y >= self.ground_y - 8 - 0.01
         if jump and on_ground:
@@ -94,18 +97,19 @@ class App:
         # プレイヤー
         pyxel.rect(self.x, self.y, 8, 8, 11)
 
-        # ===== パッド描画 =====
         # 左パッド
         pyxel.rectb(self.dpad_x, self.dpad_y, self.dpad_w, self.dpad_h, 12)
-        # 十字の線
         cx = self.dpad_x + self.dpad_w // 2
         cy = self.dpad_y + self.dpad_h // 2
         pyxel.rect(cx - 3, self.dpad_y + 4, 6, self.dpad_h - 8, 12)
         pyxel.rect(self.dpad_x + 4, cy - 3, self.dpad_w - 8, 6, 12)
 
-        # 右Aボタン
+        # 右ボタン
         pyxel.rectb(self.btn_x, self.btn_y, self.btn_w, self.btn_h, 8)
         pyxel.text(self.btn_x + 9, self.btn_y + 9, "A", 8)
+
+        # デバッグで座標も出しとくと安心
+        pyxel.text(0, 0, f"{pyxel.mouse_x},{pyxel.mouse_y}", 7)
 
 
 App()
