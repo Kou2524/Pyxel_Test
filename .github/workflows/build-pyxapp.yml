@@ -35,14 +35,11 @@ jobs:
 
       - name: Package game
         run: |
+          # move4.py はリポジトリのルートにある想定
           pyxel package . move4.py
 
-      # 👇ここを直す
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: pyxel-app
-          # Actionsの実行パスに合わせる
           path: ${{ github.workspace }}/move4.pyxapp
-          # もしくは↓でもたぶんいける
-          # path: ./move4.pyxapp
