@@ -44,5 +44,6 @@ class App:
         # プレイヤーを描く（四角で仮）
         pyxel.rect(self.x, self.y, 8, 8, 11)
 
+#test
 
 App()
