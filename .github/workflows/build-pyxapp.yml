@@ -11,14 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ① リポジトリを取ってくる
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ② Pythonを用意
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # ③ Pyxelが必要とするSDL2まわりを入れる
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -28,20 +31,24 @@ jobs:
             libsdl2-mixer-dev \
             libsdl2-ttf-dev
 
+      # ④ Pyxelを入れる
       - name: Install pyxel
         run: |
           pip install --upgrade pip
           pip install pyxel
 
-      # ここで一回上に出してから、リポジトリに戻す
+      # ⑤ .pyxapp をつくる
+      #    GitHub Actionsだと /home/runner/work/リポジトリ/リポジトリ みたいな2段フォルダになるので
+      #    いったん1個上に出てからパッケージ化して、できたファイルを戻す
       - name: Package game
         run: |
           cd ..
-          # ↑ 1階層上がる（ここが /home/runner/work/Pyxel_Test になる）
-          pyxel package Pyxel_Test move4.py
-          # できた move4.pyxapp をリポジトリの中に戻す
+          # 今ここは /home/runner/work/Pyxel_Test
+          pyxel package Pyxel_Test Pyxel_Test/move4.py
+          # 出来た move4.pyxapp をリポジトリの中に戻す
           mv move4.pyxapp Pyxel_Test/
 
+      # ⑥ 出来た .pyxapp を成果物としてアップロード
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
