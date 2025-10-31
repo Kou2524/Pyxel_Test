@@ -1,24 +1,47 @@
-name: build
+name: Build Pyxel App
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "**.py"
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      # 👇ここを追加！
-      - name: Install dependencies
+      # 👇ここを追加（Pyxelが使うネイティブのやつをUbuntuに入れる）
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
+          sudo apt-get install -y \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev
+
+      # 👇これでPyxelを入れる（さっきより後）
+      - name: Install pyxel
+        run: |
+          pip install --upgrade pip
           pip install pyxel
 
       - name: Package game
-        run: pyxel package main.py
+        run: |
+          # ここで move4.py を pyxapp にする。ファイル名に合わせて変えてね
+          pyxel package . move4.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyxel-app
+          path: main.pyxapp
