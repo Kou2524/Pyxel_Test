@@ -56,6 +56,6 @@ class App:
         pyxel.rect(self.x, self.y, 16, 16, 11)
         pyxel.text(5, 5, "D-PAD or STICK: MOVE", 7)
         pyxel.text(5, 14, "A: JUMP", 7)
-#test!?
+#test
 
 App()
