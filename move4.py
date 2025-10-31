@@ -1,128 +1,82 @@
 import pyxel
 
 
-# タッチが指定の四角の中にあるかどうか調べる関数
-def touch_in_rect(touch_id, x, y, w, h):
-    if not pyxel.touch(touch_id):
-        return False
-    tx = pyxel.touch_x(touch_id)
-    ty = pyxel.touch_y(touch_id)
-    return x <= tx < x + w and y <= ty < y + h
+def touch_pos_list(max_touches=5):
+    """今あるタッチの(x, y)を全部リストで返す"""
+    pts = []
+    for i in range(max_touches):
+        if pyxel.touch(i):
+            pts.append((i, pyxel.touch_x(i), pyxel.touch_y(i)))
+    return pts
 
 
 class App:
     def __init__(self):
-        # 画面サイズはちょっと横長にしておく
         pyxel.init(160, 120, title="Touch Gamepad", fps=60)
 
-        # プレイヤー
         self.x = 60
-        self.y = 80
-        self.vx = 0
+        self.y = 70
         self.vy = 0
-
-        # 簡単な床
         self.ground_y = 96
 
-        # ゲームパッドの位置・サイズ
-        # 左下に十字キー、右下にAボタンを出す
+        # パッドの基準位置（ちょっと上げる）
         self.dpad_x = 4
-        self.dpad_y = 68
-        self.dpad_size = 40  # 全体の大きさ
+        self.dpad_y = 60   # ← ここを少し上にした
+        self.dpad_w = 50
+        self.dpad_h = 50
 
-        self.btn_a_x = 120
-        self.btn_a_y = 78
-        self.btn_a_r = 14  # 円だけど当たりは四角でとる
+        self.btn_x = 110
+        self.btn_y = 60    # ← ここも上にした
+        self.btn_size = 28
 
         pyxel.run(self.update, self.draw)
 
-    # 画面左下の十字キーのどれかを触ってるか判定する
-    def _read_touch_gamepad(self):
+    def update(self):
         move_left = False
         move_right = False
         jump = False
 
-        # 最大5本くらいタッチを見る
-        for i in range(5):
-            if not pyxel.touch(i):
-                continue
-
-            tx = pyxel.touch_x(i)
-            ty = pyxel.touch_y(i)
-
-            # Aボタン領域（右下）
-            if (
-                self.btn_a_x <= tx < self.btn_a_x + self.btn_a_r * 2
-                and self.btn_a_y <= ty < self.btn_a_y + self.btn_a_r * 2
-            ):
-                jump = True
-                continue
-
-            # 十字キーのベース
-            # ここでは十字を「中心＋上下左右の小さい四角」で見る
-            cx = self.dpad_x + self.dpad_size // 2
-            cy = self.dpad_y + self.dpad_size // 2
-            pad_w = self.dpad_size // 3
-            pad_h = self.dpad_size // 3
-
-            # 左
-            if cx - pad_w * 2 <= tx < cx - pad_w and cy - pad_h <= ty < cy + pad_h:
-                move_left = True
-            # 右
-            if cx + pad_w <= tx < cx + pad_w * 2 and cy - pad_h <= ty < cy + pad_h:
-                move_right = True
-            # 上（今回はジャンプにしてもいいが一旦無視）
-            # if cx - pad_w <= tx < cx + pad_w and cy - pad_h * 2 <= ty < cy - pad_h:
-            #     jump = True
-
-        return move_left, move_right, jump
-
-    def update(self):
-        # 入力の初期値
-        move_left = False
-        move_right = False
-        jump_pressed = False
-
-        # ① PCキーボードの入力
+        # 1) PCキーボード
         if pyxel.btn(pyxel.KEY_LEFT):
             move_left = True
         if pyxel.btn(pyxel.KEY_RIGHT):
             move_right = True
         if pyxel.btnp(pyxel.KEY_SPACE):
-            jump_pressed = True
+            jump = True
 
-        # ② Web/iPhone用のタッチ入力（↑を上書きしていい）
-        t_left, t_right, t_jump = self._read_touch_gamepad()
-        if t_left or t_right or t_jump:
-            move_left = t_left
-            move_right = t_right
-            jump_pressed = t_jump
+        # 2) タッチを全部見る
+        for tid, tx, ty in touch_pos_list():
+            # 左パッド（ちょっと大きめにとる）
+            if (
+                self.dpad_x <= tx <= self.dpad_x + self.dpad_w
+                and self.dpad_y <= ty <= self.dpad_y + self.dpad_h
+            ):
+                # 真ん中より左 → 左
+                if tx < self.dpad_x + self.dpad_w / 2:
+                    move_left = True
+                else:
+                    move_right = True
 
-        # ③ 実際の横移動
-        self.vx = 0
+            # 右ボタン
+            if (
+                self.btn_x <= tx <= self.btn_x + self.btn_size
+                and self.btn_y <= ty <= self.btn_y + self.btn_size
+            ):
+                jump = True
+
+        # 横移動
         speed = 1.5
         if move_left:
-            self.vx = -speed
-        elif move_right:
-            self.vx = speed
+            self.x -= speed
+        if move_right:
+            self.x += speed
 
-        self.x += self.vx
+        # 重力
+        self.vy += 0.3
 
-        # 画面外に出ないように
-        if self.x < 0:
-            self.x = 0
-        if self.x > pyxel.width - 8:
-            self.x = pyxel.width - 8
-
-        # ④ 重力＆ジャンプ
-        gravity = 0.3
-        self.vy += gravity
-
-        # 地面にいるかどうか
+        # ジャンプ（地面のときだけ）
         on_ground = self.y >= self.ground_y - 8 - 0.01
-
-        # ジャンプ（地面にいるときだけ）
-        if jump_pressed and on_ground:
+        if jump and on_ground:
             self.vy = -5
 
         self.y += self.vy
@@ -132,44 +86,40 @@ class App:
             self.y = self.ground_y - 8
             self.vy = 0
 
+        # はみ出し防止
+        if self.x < 0:
+            self.x = 0
+        if self.x > pyxel.width - 8:
+            self.x = pyxel.width - 8
+
     def draw(self):
         pyxel.cls(0)
 
-        # 背景
-        pyxel.rect(0, self.ground_y, pyxel.width, pyxel.height - self.ground_y, 3)
+        # 地面
+        pyxel.rect(0, self.ground_y, pyxel.width, 120 - self.ground_y, 3)
 
         # プレイヤー
         pyxel.rect(self.x, self.y, 8, 8, 11)
 
-        # --- ここからUI（ゲームパッド） ---
-        # 十字キーのベース
-        x = self.dpad_x
-        y = self.dpad_y
-        s = self.dpad_size
-        pyxel.rectb(x, y, s, s, 5)
-
-        cx = x + s // 2
-        cy = y + s // 2
-        w = s // 3
-        h = s // 3
-
+        # --- パッド描画（見た目だけ） ---
         # 左
-        pyxel.rect(cx - w * 2, cy - h, w, h * 2, 5)
-        # 右
-        pyxel.rect(cx + w, cy - h, w, h * 2, 5)
-        # 上
-        pyxel.rect(cx - w, cy - h * 2, w * 2, h, 5)
-        # 下
-        pyxel.rect(cx - w, cy + h, w * 2, h, 5)
+        pyxel.rectb(self.dpad_x, self.dpad_y, self.dpad_w, self.dpad_h, 12)
+        # 縦棒
+        pyxel.rect(self.dpad_x + self.dpad_w // 2 - 4,
+                   self.dpad_y + 5,
+                   8,
+                   self.dpad_h - 10,
+                   12)
+        # 横棒
+        pyxel.rect(self.dpad_x + 5,
+                   self.dpad_y + self.dpad_h // 2 - 4,
+                   self.dpad_w - 10,
+                   8,
+                   12)
 
-        # Aボタン（右下）
-        pyxel.circ(self.btn_a_x + self.btn_a_r,
-                   self.btn_a_y + self.btn_a_r,
-                   self.btn_a_r,
-                   8)
-        pyxel.text(self.btn_a_x + self.btn_a_r - 2,
-                   self.btn_a_y + self.btn_a_r - 2,
-                   "A", 0)
+        # 右ボタン
+        pyxel.rectb(self.btn_x, self.btn_y, self.btn_size, self.btn_size, 8)
+        pyxel.text(self.btn_x + 9, self.btn_y + 8, "A", 8)
 
 
 App()
