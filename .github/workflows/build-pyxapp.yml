@@ -33,28 +33,17 @@ jobs:
           pip install --upgrade pip
           pip install pyxel
 
-      # ★ ここでパッケージを作る（いままでどおり）
       - name: Package game
         run: |
-          # いったん親に出る: /home/runner/work/Pyxel_Test
+          # いったん親に出る (/home/runner/work/Pyxel_Test)
           cd ..
+          # ここで .pyxapp を作る。出力名はリポジトリ名になってる
           pyxel package Pyxel_Test Pyxel_Test/move4.py
+          # 出来たのは Pyxel_Test.pyxapp なので、リポジトリの中にコピーする
+          cp Pyxel_Test.pyxapp Pyxel_Test/
 
-          echo "== ls . =="
-          ls -al .
-
-          echo "== ls Pyxel_Test =="
-          ls -al Pyxel_Test
-
-          echo "== ls Pyxel_Test/dist (あれば) =="
-          ls -al Pyxel_Test/dist || true
-
-          # ここではまだmvしない。まず場所を確認する。
-
-      # とりあえず失敗しないようにダミーを上げる
-      - name: Upload artifact (placeholder)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: debug-logs
-          path: .
-          if-no-files-found: ignore
+          name: pyxel-app
+          path: ${{ github.workspace }}/Pyxel_Test.pyxapp
